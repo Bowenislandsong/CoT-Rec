@@ -1,0 +1,3 @@
+[submodule "references/cot_decoding"]
+	path = references/cot_decoding
+	url = git@github.com:shirley-wu/cot_decoding.git
