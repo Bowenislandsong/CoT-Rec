@@ -21,7 +21,7 @@ pip install -U datasets transformers accelerate
 echo "Starting job at $(date)"
 
 # Run the script and capture failure
-python references/cot_decoding/main.py --encode_format qa \
+python cot_datset/cot_decoding/main.py --encode_format qa \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --max_new_tokens 256 \
     --cot_n_branches 50 \
