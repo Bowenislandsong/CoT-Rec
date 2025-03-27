@@ -77,20 +77,9 @@ def main():
         lm_dataset, shuffle=False, batch_size=main_args.batch_size,
         collate_fn=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, padding="longest"),
     )
-    outputs_all = []
-    accs_all = []
-    pbar = tqdm.tqdm(dataloader, total=len(dataloader))
-    for batch in pbar:
-        outputs = solve(model, tokenizer, task, batch, args=decoding_args)
-        n = len(outputs_all)
-        for i, output in enumerate(outputs):
-            output['is_correct'] = task.is_correct(raw_dataset[n + i], output['answer'])
-            outputs_all.append(output)
-            accs_all.append(output['is_correct'])
-        pbar.set_postfix(acc=np.mean(accs_all))
 
-    # Evaluate & dump results
-    print("Acc = %.2f" % (np.mean(accs_all) * 100))
+    # make dir and file for output and update as we go.
+    os.makedirs(os.path.dirname(main_args.output_fname), exist_ok=True)
     output_fname = main_args.output_fname
     while os.path.exists(output_fname):
         opt = None
@@ -100,12 +89,26 @@ def main():
             break
         else:
             output_fname = input("Input a new filename: ")
-    if output_fname != main_args.output_fname:
-        print("OK, will save to", output_fname)
-    os.makedirs(os.path.dirname(main_args.output_fname), exist_ok=True)
-    with open(main_args.output_fname, "w") as f:
-        for output in outputs_all:
-            f.write(json.dumps(output) + '\n')
+
+    accs_all = []
+    n = 0
+
+    pbar = tqdm.tqdm(dataloader, total=len(dataloader))
+    for batch in pbar:
+        print("i am what is in here:", batch.keys())
+        outputs = solve(model, tokenizer, task, batch, args=decoding_args)
+        
+        with open(main_args.output_fname, "a") as f:  # Open file in append mode
+            for i, output in enumerate(outputs):
+                output['is_correct'] = task.is_correct(raw_dataset[n + i], output['answer'])
+                accs_all.append(output['is_correct'])
+                f.write(json.dumps(output) + '\n')  # Write output to file
+        pbar.set_postfix(acc=np.mean(accs_all))
+        n = n+len(outputs)
+
+    # Evaluate & dump results
+    print("Acc = %.2f" % (np.mean(accs_all) * 100))
+
 
 
 if __name__ == "__main__":
