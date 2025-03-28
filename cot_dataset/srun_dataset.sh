@@ -44,7 +44,7 @@ python cot_dataset/cot_decoding/main.py --encode_format qa \
 --decoding cot \
 --batch_size 64 \
 --data_file cot_dataset/cot_decoding/gsm8k_data/test.jsonl \
---output_fname cot_dataset/cot_decoding/outputs/mistral-base-test.jsonl \
+--output_fname cot_dataset/cot_decoding/outputs/mistral-base-test-${SLURM_JOB_ID}.jsonl \
 || echo "Script failed" 
 
 echo "Job finished at $(date)"
@@ -56,7 +56,7 @@ python cot_dataset/cot_decoding/main.py --encode_format qa \
 --decoding cot \
 --batch_size 64 \
 --data_file cot_dataset/cot_decoding/gsm8k_data/train.jsonl \
---output_fname cot_dataset/cot_decoding/outputs/mistral-base-train.jsonl \
+--output_fname cot_dataset/cot_decoding/outputs/mistral-base-train-${SLURM_JOB_ID}.jsonl \
 || echo "Script failed" 
 
 echo "Job finished at $(date)"
