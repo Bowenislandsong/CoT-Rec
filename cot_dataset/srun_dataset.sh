@@ -4,12 +4,12 @@
 
 #SBATCH --job-name=mistral_run
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
-#SBATCH --mem=16G
-#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
 #SBATCH --output=logs/mistral_run_%j.out
-#SBATCH --gres=gpu:a100:2
-#SBATCH --gpus-per-task=gpu:a100:2
+#SBATCH --partition=gpu
+#SBATCH --gpus-per-task=a100:2
 #SBATCH --constraint=a100-80gb
 #SBATCH --error=logs/mistral_run_%j.err
 
