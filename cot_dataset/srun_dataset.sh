@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## run with sbatch cot_dataset/srun_dataset.sh from base directory.
+
 #SBATCH --job-name=mistral_run
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
