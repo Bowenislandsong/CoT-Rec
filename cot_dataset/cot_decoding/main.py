@@ -80,22 +80,12 @@ def main():
 
     # make dir and file for output and update as we go.
     os.makedirs(os.path.dirname(main_args.output_fname), exist_ok=True)
-    output_fname = main_args.output_fname
-    while os.path.exists(output_fname):
-        opt = None
-        while opt not in ['y', 'n', ]:
-            opt = input("{} exists. Do you want to overwrite? [y/n] - ")
-        if opt == 'y':
-            break
-        else:
-            output_fname = input("Input a new filename: ")
 
     accs_all = []
     n = 0
 
     pbar = tqdm.tqdm(dataloader, total=len(dataloader))
     for batch in pbar:
-        print("i am what is in here:", batch.keys())
         outputs = solve(model, tokenizer, task, batch, args=decoding_args)
         
         with open(main_args.output_fname, "a") as f:  # Open file in append mode
