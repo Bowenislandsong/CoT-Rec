@@ -106,8 +106,8 @@ def cot_decoding_solve(model, tokenizer, task, batch, args: DecodingArguments):
                 cot_score = get_cot_score(answer_probs)
                 candidates.append({'text': text, 'answer': answer, 'answer_span': answer_span, 'score': cot_score,
                                    'output_tokens': gen_ids[i, j].tolist()})
-        ret.append({'candidates': candidates, 'input': batch.input[i], 'attention_mask': batch.attention_mask[i]})
-
+        ret.append({'candidates': candidates, 'input_token': batch.input_ids[i].tolist(), 'attention_mask': batch.attention_mask[i].tolist()})
+        
         # Aggregate candidates
         if args.cot_aggregate == 'max':
             answer = sorted(candidates, key=lambda x: x['score'], reverse=True)[0]['answer']
