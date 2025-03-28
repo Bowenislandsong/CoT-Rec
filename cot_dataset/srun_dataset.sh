@@ -8,6 +8,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/mistral_run_%j.out
+#SBATCH --gres=gpu:a100:2
 #SBATCH --gpus-per-task=gpu:a100:2
 #SBATCH --constraint=a100-80gb
 #SBATCH --error=logs/mistral_run_%j.err
