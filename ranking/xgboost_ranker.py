@@ -5,17 +5,20 @@ import pandas as pd
 from itertools import product
 from copy import deepcopy
 from sklearn.metrics import ndcg_score, label_ranking_average_precision_score
+from xgboost.callback import EarlyStopping
 
 class XGBoostRanker:
-    def __init__(self, use_gpu=True):
+    def __init__(self, use_gpu=True, objective='rank:pairwise', eval_metric='map@1'):
         """
         Initialize XGBoost ranker with automatic device selection.
         :param use_gpu: Attempt GPU use if available and supported.
+        :param objective: Objective function for XGBoost.
+        :param eval_metric: Evaluation metric for XGBoost.
         """
         gpu_available = use_gpu and self._detect_gpu()
         self.params = {
-            'objective': 'rank:pairwise',
-            'eval_metric': 'map@1',
+            'objective': objective,
+            'eval_metric': eval_metric,
             'tree_method': 'gpu_hist' if gpu_available else 'hist',
         }
         self.model = None
@@ -77,6 +80,8 @@ class XGBoostRanker:
             self.model = xgb.train(
                 self.params,
                 dtrain,
+                num_boost_round=100,
+                callbacks=[EarlyStopping(rounds=20, save_best=True)],
                 evals=evals,
                 verbose_eval=True
             )
@@ -137,9 +142,9 @@ class XGBoostRanker:
             pred_scores_flat = [s for group in val_preds for s in group]
 
             metrics = RankingMetrics.calculate_metrics(true_scores_flat, pred_scores_flat)
-            score = metrics['ndcg']  # You can change the metric used for model selection
+            score = metrics['mrr']  # You can change the metric used for model selection
 
-            print(f"Validation NDCG: {score:.4f}")
+            print(f"Validation mrr: {score:.4f}")
 
             if score > best_score:
                 best_score = score
@@ -153,7 +158,6 @@ class XGBoostRanker:
         self.params = best_params
         return best_model, best_metrics
 
-    
 class RankingMetrics:
     @staticmethod
     def calculate_metrics(true_scores, pred_scores):
@@ -166,7 +170,8 @@ class RankingMetrics:
         metrics = {
             'ndcg': ndcg_score([true_scores], [pred_scores]),
             'mrr': label_ranking_average_precision_score([true_scores], [pred_scores]),
-            'arr@1': RankingMetrics._average_reciprocal_rank_at_k(true_scores, pred_scores, k=1),
+            # 'arr@1': np.average([RankingMetrics._average_reciprocal_rank_at_k(ts, ps, k=1) for ts, ps in zip(true_scores, pred_scores)]),
+            # 'map@1': np.average([RankingMetrics.map_at_1(ts,ps) for ts, ps in zip(true_scores, pred_scores)]),
         }
         return metrics
 
@@ -184,6 +189,14 @@ class RankingMetrics:
             if true_scores[idx] > 0:
                 return 1.0 / rank
         return 0.0
+    @staticmethod
+    def map_at_1(y_true, y_score):
+        """
+        y_true: list of binary relevance scores, e.g., [1, 0, 0]
+        y_score: list of predicted scores for the same items, e.g., [0.2, 0.6, 0.1]
+        """
+        top_idx = sorted(range(len(y_score)), key=lambda i: y_score[i], reverse=True)[0]
+        return y_true[top_idx]
 
 # Usage Example
 if __name__ == "__main__":
