@@ -58,7 +58,7 @@ def main():
         main_args.model_name_or_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
     )
     device_map = infer_auto_device_map(model, max_memory={
-        0: "40GiB", 1: "40GiB"
+        0: "80GiB", 1: "80GiB"
     })
     model = model.to('cpu').half()
     model = model.to(device_map)
