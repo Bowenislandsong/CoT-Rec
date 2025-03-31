@@ -11,7 +11,7 @@ import torch
 import tqdm
 from datasets import load_dataset
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, HfArgumentParser
+from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, HfArgumentParser, infer_auto_device_map
 
 from solve import DecodingArguments, solve
 from task import GSMTask
@@ -53,9 +53,15 @@ def main():
     # Load model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(main_args.model_name_or_path, padding_side='left')
     tokenizer.pad_token_id = tokenizer.eos_token_id
+
     model = AutoModelForCausalLM.from_pretrained(
-        main_args.model_name_or_path, torch_dtype=torch.bfloat16, device_map='auto'
+        main_args.model_name_or_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
     )
+    device_map = infer_auto_device_map(model, max_memory={
+        0: "40GiB", 1: "40GiB"
+    })
+    model = model.to('cpu').half()
+    model = model.to(device_map)
 
     # Load dataset
     raw_dataset = load_dataset("json", data_files={'test': main_args.data_file})['test']
