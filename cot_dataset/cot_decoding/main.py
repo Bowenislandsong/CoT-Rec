@@ -55,13 +55,8 @@ def main():
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
     model = AutoModelForCausalLM.from_pretrained(
-        main_args.model_name_or_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+        main_args.model_name_or_path, torch_dtype=torch.bfloat16
     )
-    device_map = infer_auto_device_map(model, max_memory={
-        0: "80GiB", 1: "80GiB"
-    })
-    model = model.to('cpu').half()
-    model = model.to(device_map)
 
     # Load dataset
     raw_dataset = load_dataset("json", data_files={'test': main_args.data_file})['test']
