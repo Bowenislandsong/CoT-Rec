@@ -2,6 +2,8 @@ import numpy as np
 import xgboost as xgb
 import platform
 import pandas as pd
+from itertools import product
+from copy import deepcopy
 from sklearn.metrics import ndcg_score, label_ranking_average_precision_score
 
 class XGBoostRanker:
@@ -84,26 +86,73 @@ class XGBoostRanker:
             print("Model training completed without validation.")
             return self.model
 
-
     def predict(self, input_tokens, output_tokens):
-        """
-        Generate predictions for new data.
-        """
         if self.model is None:
             raise ValueError("Model not trained yet.")
-
         embeddings = []
-        for input_emb, candidates in zip(input_tokens, output_tokens):
-            input_emb = np.array(input_emb)
-            for candidate_emb in candidates:
-                combined_emb = np.concatenate([input_emb, candidate_emb])
-                embeddings.append(combined_emb)
+        group_sizes = []
+        for inp, candidates in zip(input_tokens, output_tokens):
+            group_sizes.append(len(candidates))
+            embeddings.extend(
+                np.pad(np.concatenate([inp, cand]), (0, self.max_len - len(inp) - len(cand)), 'constant')
+                for cand in candidates
+            )
 
-        padded_embeddings = [np.pad(e, (0, self.max_len - len(e)), 'constant') for e in embeddings]
-        X = np.array(padded_embeddings)
-        dtest = xgb.DMatrix(X)
-        return self.model.predict(dtest)
-    
+        dtest = xgb.DMatrix(np.array(embeddings))
+        preds = self.model.predict(dtest)
+
+        # Regroup predictions
+        result = []
+        i = 0
+        for size in group_sizes:
+            result.append(preds[i:i+size].tolist())
+            i += size
+
+        return result
+
+    def hyperparameter_search(self, train_data, val_data, param_grid):
+        """
+        Perform grid search over hyperparameters using validation data.
+        :param train_data: Tuple (input_tokens, output_tokens, scores)
+        :param val_data: Tuple (input_tokens, output_tokens, scores)
+        :param param_grid: Dict of lists of hyperparameter values
+        :return: Best model and its metrics
+        """
+        keys, values = zip(*param_grid.items())
+        best_score = -float("inf")
+        best_model = None
+        best_params = {}
+        best_metrics = {}
+
+        for combo in product(*values):
+            current_params = deepcopy(self.params)
+            current_params.update(dict(zip(keys, combo)))
+
+            print(f"\nTrying params: {dict(zip(keys, combo))}")
+            self.params = current_params
+            self.train(*train_data, validation_data=val_data)
+
+            val_preds = self.predict(val_data[0], val_data[1])
+            true_scores_flat = [s for group in val_data[2] for s in group]
+            pred_scores_flat = [s for group in val_preds for s in group]
+
+            metrics = RankingMetrics.calculate_metrics(true_scores_flat, pred_scores_flat)
+            score = metrics['ndcg']  # You can change the metric used for model selection
+
+            print(f"Validation NDCG: {score:.4f}")
+
+            if score > best_score:
+                best_score = score
+                best_model = deepcopy(self.model)
+                best_params = current_params
+                best_metrics = metrics
+
+        print(f"\nBest Params: {best_params}")
+        print(f"Best Metrics: {best_metrics}")
+        self.model = best_model
+        self.params = best_params
+        return best_model, best_metrics
+
     
 class RankingMetrics:
     @staticmethod
@@ -164,3 +213,8 @@ if __name__ == "__main__":
 
     print("Predictions:", predictions)
     print("Metrics:", metrics)
+
+
+
+
+
