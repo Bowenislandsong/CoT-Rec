@@ -55,7 +55,7 @@ def main():
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
     model = AutoModelForCausalLM.from_pretrained(
-        main_args.model_name_or_path, torch_dtype=torch.bfloat16
+        main_args.model_name_or_path, torch_dtype=torch.bfloat16, device_map='auto'
     )
 
     # Load dataset
