@@ -11,7 +11,7 @@ import torch
 import tqdm
 from datasets import load_dataset
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, HfArgumentParser, infer_auto_device_map
+from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, HfArgumentParser
 
 from solve import DecodingArguments, solve
 from task import GSMTask
