@@ -5,8 +5,8 @@
 #SBATCH --job-name=mistral_run
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
-#SBATCH --time=02:00:00
+#SBATCH --mem=120G
+#SBATCH --time=20:00:00
 #SBATCH --output=logs/mistral_run_%j.out
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-task=a100:2
@@ -37,26 +37,26 @@ huggingface-cli login --token "$HUGGING_FACE_HUB_TOKEN"
 echo "Starting job at $(date)"
 
 # Run the script and capture failure
-python cot_dataset/cot_decoding/main.py --encode_format qa \
---model_name_or_path mistralai/Mistral-7B-v0.1 \
---max_new_tokens 256 \
+python cot_dataset/cot_decoding/main.py --encode_format instruct \
+--model_name_or_path mistralai/Mistral-7B-Instruct-v0.1 \
+--max_new_tokens 512 \
 --cot_n_branches 50 \
 --decoding cot \
 --batch_size 64 \
 --data_file cot_dataset/cot_decoding/gsm8k_data/test.jsonl \
---output_fname cot_dataset/cot_decoding/outputs/mistral-base-test-${SLURM_JOB_ID}.jsonl \
+--output_fname cot_dataset/cot_decoding/outputs/mistral-instruct-test-${SLURM_JOB_ID}.jsonl \
 || echo "Script failed" 
 
 echo "Job finished at $(date)"
 
-python cot_dataset/cot_decoding/main.py --encode_format qa \
---model_name_or_path mistralai/Mistral-7B-v0.1 \
---max_new_tokens 256 \
+python cot_dataset/cot_decoding/main.py --encode_format instruct \
+--model_name_or_path mistralai/Mistral-7B-Instruct-v0.1 \
+--max_new_tokens 512 \
 --cot_n_branches 50 \
 --decoding cot \
 --batch_size 64 \
 --data_file cot_dataset/cot_decoding/gsm8k_data/train.jsonl \
---output_fname cot_dataset/cot_decoding/outputs/mistral-base-train-${SLURM_JOB_ID}.jsonl \
+--output_fname cot_dataset/cot_decoding/outputs/mistral-instruct-train-${SLURM_JOB_ID}.jsonl \
 || echo "Script failed" 
 
 echo "Job finished at $(date)"
