@@ -80,7 +80,7 @@ class XGBoostRanker:
             self.model = xgb.train(
                 self.params,
                 dtrain,
-                num_boost_round=100,
+                num_boost_round=1000,
                 callbacks=[EarlyStopping(rounds=20, save_best=True)],
                 evals=evals,
                 verbose_eval=True
