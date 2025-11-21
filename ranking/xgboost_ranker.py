@@ -1,3 +1,10 @@
+"""
+XGBoost-based ranking model for recommendation tasks.
+
+This module implements a learning-to-rank model using XGBoost with support
+for GPU acceleration, hyperparameter tuning, and various ranking metrics.
+"""
+
 import numpy as np
 import xgboost as xgb
 import platform
@@ -6,14 +13,35 @@ from itertools import product
 from copy import deepcopy
 from sklearn.metrics import ndcg_score, label_ranking_average_precision_score
 from xgboost.callback import EarlyStopping
+from typing import List, Tuple, Dict, Optional
+
 
 class XGBoostRanker:
-    def __init__(self, use_gpu=True, objective='rank:pairwise', eval_metric='map@1'):
+    """
+    XGBoost-based ranking model with GPU support and hyperparameter tuning.
+    
+    This ranker uses gradient boosting for learning-to-rank tasks, with
+    automatic GPU detection and support for group-wise ranking.
+    
+    Attributes:
+        params: Dictionary of XGBoost parameters
+        model: Trained XGBoost booster (None until trained)
+        max_len: Maximum embedding length after padding
+    """
+    
+    def __init__(
+        self,
+        use_gpu: bool = True,
+        objective: str = 'rank:pairwise',
+        eval_metric: str = 'map@1'
+    ) -> None:
         """
         Initialize XGBoost ranker with automatic device selection.
-        :param use_gpu: Attempt GPU use if available and supported.
-        :param objective: Objective function for XGBoost.
-        :param eval_metric: Evaluation metric for XGBoost.
+        
+        Args:
+            use_gpu: Whether to attempt GPU usage if available
+            objective: XGBoost objective function (e.g., 'rank:pairwise', 'rank:ndcg')
+            eval_metric: Evaluation metric for training (e.g., 'map@1', 'ndcg')
         """
         gpu_available = use_gpu and self._detect_gpu()
         self.params = {
@@ -25,8 +53,17 @@ class XGBoostRanker:
         self.max_len = None
         print(f"Using {'GPU' if gpu_available else 'CPU'} for training.")
 
-    def _detect_gpu(self):
-        """Detect if a GPU is available and supported by XGBoost."""
+    def _detect_gpu(self) -> bool:
+        """
+        Detect if a GPU is available and supported by XGBoost.
+        
+        Returns:
+            True if GPU is available and supported, False otherwise
+            
+        Note:
+            Returns False for macOS (Apple Silicon) as XGBoost doesn't
+            support Apple GPU for training.
+        """
         try:
             if platform.system() == "Darwin":  # macOS (M1/M2/M3/M4 chips)
                 return False  # XGBoost does not support Apple's GPU for training
@@ -35,13 +72,37 @@ class XGBoostRanker:
         except:
             return False
 
-    def prepare_data(self, input_tokens, output_tokens, scores):
+    def prepare_data(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]],
+        scores: List[List[int]]
+    ) -> Tuple[np.ndarray, np.ndarray, List[int]]:
         """
-        Prepare data from provided lists.
-        :param input_tokens: List of input token embeddings.
-        :param output_tokens: List of lists of candidate output token embeddings.
-        :param scores: List of lists of scores.
-        :return: X, y, group
+        Prepare data from provided lists for XGBoost training.
+        
+        This method concatenates input and output embeddings, pads them to
+        a uniform length, and creates group information for ranking.
+        
+        Args:
+            input_tokens: List of input token embeddings, one per query
+            output_tokens: List of lists of candidate output embeddings
+            scores: List of lists of relevance scores for each candidate
+        
+        Returns:
+            Tuple containing:
+            - X: Padded feature matrix of shape (n_samples, max_len)
+            - y: Relevance scores of shape (n_samples,)
+            - group: List of group sizes (candidates per query)
+        
+        Examples:
+            >>> ranker = XGBoostRanker(use_gpu=False)
+            >>> input_tokens = [np.array([1.0, 2.0])]
+            >>> output_tokens = [[np.array([3.0, 4.0]), np.array([5.0, 6.0])]]
+            >>> scores = [[1, 0]]
+            >>> X, y, group = ranker.prepare_data(input_tokens, output_tokens, scores)
+            >>> X.shape[0] == 2  # 2 candidates
+            True
         """
         embeddings = []
         flat_scores = []
@@ -62,9 +123,33 @@ class XGBoostRanker:
         y = np.array(flat_scores)
         return X, y, group
 
-    def train(self, input_tokens, output_tokens, scores, validation_data=None):
+    def train(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]],
+        scores: List[List[int]],
+        validation_data: Optional[Tuple[List[np.ndarray], List[List[np.ndarray]], List[List[int]]]] = None
+    ) -> xgb.Booster:
         """
-        Train the ranking model.
+        Train the XGBoost ranking model.
+        
+        Args:
+            input_tokens: Training input token embeddings
+            output_tokens: Training candidate output embeddings
+            scores: Training relevance scores
+            validation_data: Optional tuple of (input_tokens, output_tokens, scores)
+                           for validation
+        
+        Returns:
+            Trained XGBoost booster model
+        
+        Examples:
+            >>> ranker = XGBoostRanker(use_gpu=False)
+            >>> # Prepare training data
+            >>> input_tokens = [np.random.rand(5) for _ in range(3)]
+            >>> output_tokens = [[np.random.rand(4), np.random.rand(4)] for _ in range(3)]
+            >>> scores = [[1, 0], [0, 1], [1, 0]]
+            >>> model = ranker.train(input_tokens, output_tokens, scores)
         """
         X, y, group = self.prepare_data(input_tokens, output_tokens, scores)
         dtrain = xgb.DMatrix(X, label=y)
@@ -91,7 +176,30 @@ class XGBoostRanker:
             print("Model training completed without validation.")
             return self.model
 
-    def predict(self, input_tokens, output_tokens):
+    def predict(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]]
+    ) -> List[List[float]]:
+        """
+        Generate predictions for input-output pairs.
+        
+        Args:
+            input_tokens: Input token embeddings for queries
+            output_tokens: Candidate output embeddings for each query
+        
+        Returns:
+            List of lists containing prediction scores for each candidate
+        
+        Raises:
+            ValueError: If model has not been trained yet
+        
+        Examples:
+            >>> # After training
+            >>> predictions = ranker.predict(test_input_tokens, test_output_tokens)
+            >>> len(predictions) == len(test_input_tokens)
+            True
+        """
         if self.model is None:
             raise ValueError("Model not trained yet.")
         embeddings = []
@@ -189,6 +297,7 @@ class RankingMetrics:
             if true_scores[idx] > 0:
                 return 1.0 / rank
         return 0.0
+
     @staticmethod
     def map_at_1(y_true, y_score):
         """
@@ -197,6 +306,7 @@ class RankingMetrics:
         """
         top_idx = sorted(range(len(y_score)), key=lambda i: y_score[i], reverse=True)[0]
         return y_true[top_idx]
+
 
 # Usage Example
 if __name__ == "__main__":
@@ -226,8 +336,4 @@ if __name__ == "__main__":
 
     print("Predictions:", predictions)
     print("Metrics:", metrics)
-
-
-
-
 

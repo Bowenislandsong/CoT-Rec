@@ -1,19 +1,37 @@
+"""
+PyTorch-based neural ranking model for recommendation tasks.
+
+This module implements a neural network-based learning-to-rank model using
+PyTorch with support for GPU acceleration and batch training.
+"""
+
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, TensorDataset
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from tqdm import tqdm
+from typing import List, Tuple, Optional, Dict
 
 
 class RankingDataset(Dataset):
-    def __init__(self, X, y):
+    """
+    PyTorch Dataset for ranking tasks.
+    
+    Wraps feature matrix and labels for batch processing during training.
+    
+    Args:
+        X: Feature matrix of shape (n_samples, n_features)
+        y: Label vector of shape (n_samples,)
+    """
+    
+    def __init__(self, X: np.ndarray, y: np.ndarray) -> None:
         self.X = torch.tensor(X, dtype=torch.float32)
         self.y = torch.tensor(y, dtype=torch.float32)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.y)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         return {
             'features': self.X[idx],
             'label': self.y[idx]
@@ -21,7 +39,21 @@ class RankingDataset(Dataset):
 
 
 class RankingHead(nn.Module):
-    def __init__(self, input_dim):
+    """
+    Neural network ranking head.
+    
+    A simple feedforward network that maps input features to a relevance score.
+    
+    Architecture:
+        - Input layer: input_dim features
+        - Hidden layer: 128 units with ReLU activation
+        - Output layer: 1 unit (relevance score)
+    
+    Args:
+        input_dim: Dimensionality of input features
+    """
+    
+    def __init__(self, input_dim: int) -> None:
         super().__init__()
         self.fc = nn.Sequential(
             nn.Linear(input_dim, 128),
@@ -29,25 +61,72 @@ class RankingHead(nn.Module):
             nn.Linear(128, 1)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the network.
+        
+        Args:
+            x: Input tensor of shape (batch_size, input_dim)
+        
+        Returns:
+            Relevance scores of shape (batch_size,)
+        """
         return self.fc(x).squeeze(-1)
 
 
 class Ranker:
-    def __init__(self, max_len=512, device=None):
+    """
+    Neural ranking model trainer and predictor.
+    
+    This class handles data preparation, model training, and prediction
+    for neural ranking tasks.
+    
+    Attributes:
+        device: PyTorch device (CPU or CUDA)
+        model: RankingHead model (None until trained)
+        max_len: Maximum embedding length for padding
+    """
+    
+    def __init__(
+        self,
+        max_len: int = 512,
+        device: Optional[torch.device] = None
+    ) -> None:
+        """
+        Initialize the ranker.
+        
+        Args:
+            max_len: Maximum length for embedding padding
+            device: PyTorch device. If None, automatically selects GPU if available
+        """
         self.device = device or self._get_device()
         self.model = None
         self.max_len = max_len
 
-    def _get_device(self):
+    def _get_device(self) -> torch.device:
+        """Get the appropriate device (GPU if available, else CPU)."""
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def prepare_data(self, input_tokens, output_tokens, scores=None):
+    def prepare_data(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]],
+        scores: Optional[List[List[int]]] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        :param input_tokens: List[embedding]
-        :param output_tokens: List[List[embedding]]
-        :param scores: Optional[List[List[int]]]
-        :return: X (np.array), y (np.array), group (List[int])
+        Prepare data for training or prediction.
+        
+        Concatenates input and output embeddings and pads to max_len.
+        
+        Args:
+            input_tokens: List of input embeddings, one per query
+            output_tokens: List of lists of candidate embeddings
+            scores: Optional list of lists of relevance scores
+        
+        Returns:
+            Tuple of (X, y) where:
+            - X: Padded feature matrix of shape (n_samples, max_len)
+            - y: Relevance scores of shape (n_samples,)
         """
         embeddings = []
         flat_scores = []
@@ -68,7 +147,30 @@ class Ranker:
         return X, y
 
 
-    def train(self, input_tokens, output_tokens, scores, epochs=3, batch_size=32, lr=1e-4):
+    def train(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]],
+        scores: List[List[int]],
+        epochs: int = 3,
+        batch_size: int = 32,
+        lr: float = 1e-4
+    ) -> None:
+        """
+        Train the neural ranking model.
+        
+        Args:
+            input_tokens: Training input embeddings
+            output_tokens: Training candidate embeddings
+            scores: Training relevance scores
+            epochs: Number of training epochs
+            batch_size: Batch size for training
+            lr: Learning rate for Adam optimizer
+        
+        Examples:
+            >>> ranker = Ranker(max_len=512)
+            >>> ranker.train(train_input, train_output, train_scores, epochs=10)
+        """
         X, y = self.prepare_data(input_tokens, output_tokens, scores)
 
         dataset = RankingDataset(X, y)
@@ -94,7 +196,24 @@ class Ranker:
 
             print(f"Epoch {epoch+1} Loss: {total_loss / len(dataloader):.4f}")
 
-    def predict(self, input_tokens, output_tokens):
+    def predict(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]]
+    ) -> List[float]:
+        """
+        Generate predictions for input-output pairs.
+        
+        Args:
+            input_tokens: Input embeddings for queries
+            output_tokens: Candidate embeddings for each query
+        
+        Returns:
+            List of prediction scores (flattened across all candidates)
+        
+        Examples:
+            >>> predictions = ranker.predict(test_input, test_output)
+        """
         X, _ = self.prepare_data(input_tokens, output_tokens, None)
         dataset = RankingDataset(X, [0]*len(X))
         dataloader = DataLoader(dataset, batch_size=64)
@@ -113,7 +232,26 @@ class Ranker:
 
 
 
-    def evaluate_map1(self, input_tokens, output_tokens, scores):
+    def evaluate_map1(
+        self,
+        input_tokens: List[np.ndarray],
+        output_tokens: List[List[np.ndarray]],
+        scores: List[List[int]]
+    ) -> float:
+        """
+        Evaluate MAP@1 (Mean Average Precision at rank 1).
+        
+        Computes the proportion of queries where the top-ranked item
+        is the relevant one.
+        
+        Args:
+            input_tokens: Input embeddings
+            output_tokens: Candidate embeddings (assumes 50 candidates per query)
+            scores: Ground truth relevance scores
+        
+        Returns:
+            MAP@1 score (accuracy of top-1 predictions)
+        """
         preds = self.predict(input_tokens, output_tokens)
         preds = np.reshape(preds, (len(scores), 50))
         top_preds = np.argmax(preds, axis=1)
