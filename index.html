@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chain-of-Thought Recommendation (CoT-Rec) - A recommendation framework that leverages Chain-of-Thought reasoning">
+    <title>CoT-Rec - Chain-of-Thought Recommendation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .section {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .section h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .section p {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        
+        .section ul, .section ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .section li {
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            padding: 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #333;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 10px 10px 0;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #764ba2;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .feature-card h3 {
+            color: #667eea;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .header p {
+                font-size: 1.1em;
+            }
+            
+            .section {
+                padding: 25px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 CoT-Rec</h1>
+        <p>Chain-of-Thought Recommendation Framework</p>
+    </div>
+    
+    <div class="container">
+        <div class="section">
+            <h2>Overview</h2>
+            <p>
+                Chain-of-Thought Recommendation (CoT-Rec) is an advanced recommendation framework that leverages 
+                Chain-of-Thought reasoning to enhance decision-making by incorporating step-by-step logical 
+                reasoning into the recommendation process. This approach significantly improves interpretability, 
+                adaptability, and performance across various recommendation scenarios.
+            </p>
+            <p>
+                The framework combines the power of Large Language Models (LLMs) with structured reasoning to 
+                provide more transparent and reliable recommendations.
+            </p>
+            <div style="margin-top: 20px;">
+                <a href="https://github.com/Bowenislandsong/CoT-Rec" class="btn">View on GitHub</a>
+                <a href="#getting-started" class="btn btn-secondary">Get Started</a>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <h3>🔍 Enhanced Interpretability</h3>
+                    <p>
+                        Provides transparent reasoning paths that make recommendations understandable and trustworthy.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>🎯 Step-by-Step Reasoning</h3>
+                    <p>
+                        Incorporates structured Chain-of-Thought reasoning for more logical and coherent recommendations.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>🚀 High Performance</h3>
+                    <p>
+                        Achieves superior performance through advanced ranking mechanisms and neural architectures.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>🔧 Flexible Framework</h3>
+                    <p>
+                        Adaptable to various recommendation scenarios and customizable to specific use cases.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>🤖 LLM Integration</h3>
+                    <p>
+                        Seamlessly integrates with state-of-the-art language models including Mistral and other transformers.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>📊 Advanced Ranking</h3>
+                    <p>
+                        Includes sophisticated ranking mechanisms with both neural and gradient-boosted approaches.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section" id="getting-started">
+            <h2>Getting Started</h2>
+            
+            <h3>Prerequisites</h3>
+            <p>
+                The framework requires Python 3.9+ and supports both CPU and CUDA-enabled GPU environments.
+            </p>
+            
+            <h3>Installation</h3>
+            <p>Clone the repository and set up the environment:</p>
+            <div class="code-block">
+                <pre><code># Clone the repository
+git clone https://github.com/Bowenislandsong/CoT-Rec.git
+cd CoT-Rec
+
+# Create conda environment from the provided configuration
+conda env create -f llm_env.yml
+conda activate llm_env</code></pre>
+            </div>
+            
+            <h3>Quick Start</h3>
+            <p>The framework includes several key components:</p>
+            <ul>
+                <li><strong>CoT Dataset Processing:</strong> Tools for preparing and processing Chain-of-Thought datasets</li>
+                <li><strong>Ranking Models:</strong> Neural ranking heads and XGBoost-based rankers</li>
+                <li><strong>Evaluation Metrics:</strong> Comprehensive metrics for assessing recommendation quality</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>Project Structure</h2>
+            <div class="code-block">
+                <pre><code>CoT-Rec/
+├── cot_dataset/          # Chain-of-Thought dataset processing
+│   └── cot_decoding/     # Decoding and inference utilities
+├── ranking/              # Ranking models and algorithms
+│   ├── ranking_head_ranker.py    # Neural ranking implementation
+│   ├── xgboost_ranker.py         # Gradient boosting ranker
+│   └── metrics.py                # Evaluation metrics
+├── ranking_dataset/      # Dataset utilities for ranking
+├── references/           # Reference materials and documentation
+└── llm_env.yml          # Conda environment configuration</code></pre>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Components</h2>
+            
+            <h3>Chain-of-Thought Dataset Processing</h3>
+            <p>
+                The <code>cot_dataset</code> module provides tools for working with Chain-of-Thought reasoning data, 
+                including decoding strategies and task-specific processing for datasets like GSM8K.
+            </p>
+            
+            <h3>Ranking Models</h3>
+            <p>
+                The framework includes multiple ranking approaches:
+            </p>
+            <ul>
+                <li><strong>Neural Ranking Head:</strong> PyTorch-based neural network for learning ranking functions</li>
+                <li><strong>XGBoost Ranker:</strong> Gradient-boosted decision tree approach for ranking</li>
+                <li><strong>Custom Metrics:</strong> Specialized evaluation metrics for recommendation quality</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>Technology Stack</h2>
+            <ul>
+                <li><strong>Deep Learning:</strong> PyTorch with CUDA support</li>
+                <li><strong>Language Models:</strong> HuggingFace Transformers (Mistral, etc.)</li>
+                <li><strong>Ranking:</strong> XGBoost, Neural Networks</li>
+                <li><strong>Data Processing:</strong> Pandas, NumPy, PyArrow</li>
+                <li><strong>Development:</strong> Jupyter Notebooks for experimentation</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>Contributing</h2>
+            <p>
+                We welcome contributions to CoT-Rec! Whether you're fixing bugs, improving documentation, 
+                or proposing new features, your help is appreciated.
+            </p>
+            <p>
+                Please feel free to submit issues and pull requests on our 
+                <a href="https://github.com/Bowenislandsong/CoT-Rec" style="color: #667eea;">GitHub repository</a>.
+            </p>
+        </div>
+        
+        <div class="section">
+            <h2>License</h2>
+            <p>
+                This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). 
+                See the <a href="https://github.com/Bowenislandsong/CoT-Rec/blob/main/LICENSE" style="color: #667eea;">LICENSE</a> 
+                file for details.
+            </p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>
+            CoT-Rec - Chain-of-Thought Recommendation Framework<br>
+            <a href="https://github.com/Bowenislandsong/CoT-Rec">GitHub Repository</a> | 
+            Licensed under AGPL-3.0
+        </p>
+    </div>
+</body>
+</html>
