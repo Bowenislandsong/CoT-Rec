@@ -93,6 +93,13 @@
             overflow-x: auto;
         }
         
+        .code-block pre {
+            margin: 0;
+            padding: 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
         .code-block code {
             font-family: 'Courier New', monospace;
             font-size: 0.95em;
@@ -257,13 +264,13 @@
             <h3>Installation</h3>
             <p>Clone the repository and set up the environment:</p>
             <div class="code-block">
-                <code># Clone the repository<br>
-git clone https://github.com/Bowenislandsong/CoT-Rec.git<br>
-cd CoT-Rec<br>
-<br>
-# Create conda environment from the provided configuration<br>
-conda env create -f llm_env.yml<br>
-conda activate llm_env</code>
+                <pre><code># Clone the repository
+git clone https://github.com/Bowenislandsong/CoT-Rec.git
+cd CoT-Rec
+
+# Create conda environment from the provided configuration
+conda env create -f llm_env.yml
+conda activate llm_env</code></pre>
             </div>
             
             <h3>Quick Start</h3>
@@ -278,16 +285,16 @@ conda activate llm_env</code>
         <div class="section">
             <h2>Project Structure</h2>
             <div class="code-block">
-                <code>CoT-Rec/<br>
-├── cot_dataset/          # Chain-of-Thought dataset processing<br>
-│   └── cot_decoding/     # Decoding and inference utilities<br>
-├── ranking/              # Ranking models and algorithms<br>
-│   ├── ranking_head_ranker.py    # Neural ranking implementation<br>
-│   ├── xgboost_ranker.py         # Gradient boosting ranker<br>
-│   └── metrics.py                # Evaluation metrics<br>
-├── ranking_dataset/      # Dataset utilities for ranking<br>
-├── references/           # Reference materials and documentation<br>
-└── llm_env.yml          # Conda environment configuration</code>
+                <pre><code>CoT-Rec/
+├── cot_dataset/          # Chain-of-Thought dataset processing
+│   └── cot_decoding/     # Decoding and inference utilities
+├── ranking/              # Ranking models and algorithms
+│   ├── ranking_head_ranker.py    # Neural ranking implementation
+│   ├── xgboost_ranker.py         # Gradient boosting ranker
+│   └── metrics.py                # Evaluation metrics
+├── ranking_dataset/      # Dataset utilities for ranking
+├── references/           # Reference materials and documentation
+└── llm_env.yml          # Conda environment configuration</code></pre>
             </div>
         </div>
         
